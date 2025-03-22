@@ -197,8 +197,11 @@ if __name__ == "__main__":
     val_loader = data_module.val_dataloader()
     test_loader = data_module.test_dataloader()
     dataloader_list = [train_loader, val_loader, test_loader]
+    #dataloader_list = [test_loader]
     titles = ['Train', 'Val', 'Test']
+    #titles = ['Test']
     colors = ['red', 'green', 'magenta']
+    #colors = ['magenta']
 
     factors = None
     if normalize:
