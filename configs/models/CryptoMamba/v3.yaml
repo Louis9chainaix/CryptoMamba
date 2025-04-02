@@ -1,9 +1,9 @@
 target: pl_modules.cmamba_module.CryptoMambaModule
 params: 
-    num_features: 5
+    num_features: 6 #5
     hidden_dims: [14, 16, 32, 1]
     d_states: 96
     layer_density: 4
-    use_acc_in_loss: True
+    #use_acc_in_loss: True
     mode: 'diff'
 normalize: False

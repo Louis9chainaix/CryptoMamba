@@ -1,0 +1,7 @@
+ Split        MSE          RMSE     MAPE      MAE    
+ Train     84174.055     290.128   0.00498  166.785  
+Direction Accuracy: 0.4744 (Up: 0.4870, Down: 0.4615, Flat: 0.0000)
+  Val     381988.781     618.052   0.00418  419.881  
+Direction Accuracy: 0.4794 (Up: 0.4987, Down: 0.4594, Flat: 0.0000)
+ Test     324208.219     569.393   0.00419  393.151  
+Direction Accuracy: 0.4799 (Up: 0.4829, Down: 0.4771, Flat: 0.0000)

@@ -1,0 +1,2 @@
+ Split        MSE          RMSE     MAPE      MAE    
+ Test      5547.938       74.484   0.00051   47.924  

@@ -1,0 +1,18 @@
+data_config: 'mode_1'
+model: 'CMamba_v2'
+
+name: 'CMamba'
+max_epochs: 500
+use_volume: True
+devices: 4
+save_checkpoints: True
+num_workers: 4
+expname: 'cmamba_btc_1h_0325'
+batch_size: 256
+resume_from_checkpoint: True
+hyperparams:
+    optimizer: 'adam'
+    lr: 0.01
+    lr_step_size: 50
+    lr_gamma: 0.5
+    weight_decay: 0.001

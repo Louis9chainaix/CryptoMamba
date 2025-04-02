@@ -70,6 +70,7 @@ class DataConverter:
         tmp = '----'
         data_path = f'{self.file_path}/{tmp}.csv'
         yaml_path = f'{self.file_path}/config.pkl'
+        
         if os.path.isfile(data_path.replace(tmp, 'train')):
             train = pd.read_csv(data_path.replace(tmp, 'train'), index_col=0)
             val = pd.read_csv(data_path.replace(tmp, 'val'), index_col=0)
