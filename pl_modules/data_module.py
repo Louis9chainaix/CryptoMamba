@@ -40,9 +40,6 @@ class CMambaDataModule(pl.LightningDataModule):
         num_workers=4,
         normalize=False,
         window_size=14,
-        task_type='regression',  # Added parameter for task type
-        threshold=0.001,         # Added parameter for classification threshold
-        y_key='Close'            # Added parameter for target column
     ):
 
         super().__init__()
@@ -55,9 +52,6 @@ class CMambaDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.distributed_sampler = distributed_sampler
         self.window_size = window_size
-        self.task_type = task_type  # Store task type
-        self.threshold = threshold  # Store threshold
-        self.y_key = y_key          # Store target column name
 
         self.converter = DataConverter(data_config)
         train, val, test = self.converter.get_data()
@@ -69,10 +63,6 @@ class CMambaDataModule(pl.LightningDataModule):
 
         if normalize:
             self.normalize()
-            
-        # Add task-specific data preparation
-        if self.task_type == 'classification':
-            self._prepare_classification_data()
 
 
     def normalize(self):
@@ -96,18 +86,6 @@ class CMambaDataModule(pl.LightningDataModule):
                     data['Timestamp_orig'] = data.get(key)
                 data[key] = (data.get(key) - tmp.get(key).get('min')) / (tmp.get(key).get('max') - tmp.get(key).get('min'))
         self.factors = tmp
-        
-        # Set normalization coefficients in transforms if available
-        for transform in [self.train_transform, self.val_transform, self.test_transform]:
-            if hasattr(transform, 'set_normalization_coeffs'):
-                transform.set_normalization_coeffs(self.factors)
-
-    def _prepare_classification_data(self):
-        """
-        Prepare data specifically for classification tasks, such as computing returns
-        """
-        # No special preparation needed here since transforms will handle it
-        pass
 
     def _create_data_loader(
         self,
@@ -120,9 +98,6 @@ class CMambaDataModule(pl.LightningDataModule):
             split=data_split,
             window_size=self.window_size,
             transform=data_transform,
-            task_type=self.task_type,    # Pass task type to dataset
-            threshold=self.threshold,    # Pass threshold to dataset
-            y_key=self.y_key             # Pass target column to dataset
         )
 
         batch_size = self.batch_size if batch_size is None else batch_size

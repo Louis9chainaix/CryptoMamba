@@ -373,7 +373,6 @@ class CMamba(nn.Module):
         d_states=16,
         use_checkpoint=False,
         cls=False,
-        task_type='regression',  # Added task_type parameter
         **kwargs
     ):
         super().__init__()
@@ -389,33 +388,16 @@ class CMamba(nn.Module):
         self.norm_layer = norm_layer
         self.d_states = None
         self.use_checkpoint = use_checkpoint
-        self.task_type = task_type  # Store task type
         self._set_d_states(d_states)
         self._create_layer_density(layer_density) 
         self.args = kwargs
         self.act = nn.ReLU
         self.cls = cls
 
-        # Modify post_process based on task type
-        if self.task_type == 'classification':
-            # For classification, we need to output num_classes values
-            if num_classes is None:
-                num_classes = 3  # Default to 3 classes (down, stationary, up)
-                
-            self.post_process = nn.Sequential(
-                Permute(0, 2, 1),
-                nn.Linear(num_features, 1),
-                nn.Flatten(),  # Flatten to remove the last dimension
-                nn.Linear(hidden_dims[-1], num_classes)  # Output has num_classes neurons
-            )
-            self.softmax = nn.Softmax(dim=1)  # Added softmax for probabilities
-        else:
-            # Original regression post-processing
-            self.post_process = nn.Sequential(
-                Permute(0, 2, 1),
-                nn.Linear(num_features, 1),
-            )
-            
+        self.post_process = nn.Sequential(
+            Permute(0, 2, 1),
+            nn.Linear(num_features, 1),
+        )
         self.tanh = nn.Tanh()
 
         d = len(hidden_dims)
@@ -476,45 +458,6 @@ class CMamba(nn.Module):
             x = layer(x)
 
         x = self.post_process(x)
-        
-        if self.task_type == 'classification':
-            # For classification, return logits (don't apply softmax here)
-            # This is better for training with CrossEntropyLoss
-            return x
-        else:
-            # For regression
-            if self.cls:
-                x = self.tanh(x)
-            return x
-    
-    def predict_proba(self, x):
-        """Get class probabilities using softmax"""
-        if self.task_type != 'classification':
-            raise ValueError("predict_proba is only available for classification task_type")
-            
-        logits = self.forward(x)
-        return self.softmax(logits)
-    
-    def create_class_labels(self, returns, threshold=0.001):
-        """
-        Convert returns into class labels:
-        0: Down (negative return below threshold)
-        1: Stationary (return between -threshold and threshold)
-        2: Up (positive return above threshold)
-        """
-        if isinstance(returns, torch.Tensor):
-            # If returns is a tensor
-            labels = torch.zeros_like(returns, dtype=torch.long)
-            labels[returns < -threshold] = 0  # Down
-            labels[(returns >= -threshold) & (returns <= threshold)] = 1  # Stationary
-            labels[returns > threshold] = 2  # Up
-            return labels
-        else:
-            # If returns is a scalar or numpy value
-            returns = float(returns)
-            if returns < -threshold:
-                return 0  # Down
-            elif returns <= threshold:
-                return 1  # Stationary
-            else:
-                return 2  # Up
+        if self.cls:
+            x = self.tanh(x)
+        return x

@@ -1,22 +1,22 @@
 target: pl_modules.cmamba_module.CryptoMambaModule
 params: 
     num_features: 6
-    hidden_dims: [60, 120, 32, 3] #[180, 320, 64, 3]  # Changed final output to 3 classes
+    hidden_dims: [14, 16, 32, 1]
     d_states: 64
     layer_density: 4
-    loss: 'cross_entropy'  # Changed to cross_entropy for classification
-    task_type: 'classification'  # Added task_type parameter
-    num_classes: 3  # Added num_classes parameter
-    threshold: 0.0001  # Added threshold parameter for class definitions
-    window_size: 60 #180
-    cls: True  # Enable classification mode in CMamba
+    loss: 'rmse'
 normalize: False
 
 # target: pl_modules.cmamba_module.CryptoMambaModule
 # params: 
 #     num_features: 6
-#     hidden_dims: [14, 16, 32, 1]
+#     hidden_dims: [60, 120, 32, 3] #[180, 320, 64, 3]  # Changed final output to 3 classes
 #     d_states: 64
 #     layer_density: 4
-#     loss: 'rmse'
+#     loss: 'cross_entropy'  # Changed to cross_entropy for classification
+#     task_type: 'classification'  # Added task_type parameter
+#     num_classes: 3  # Added num_classes parameter
+#     threshold: 0.0001  # Added threshold parameter for class definitions
+#     window_size: 60 #180
+#     cls: True  # Enable classification mode in CMamba
 # normalize: False
