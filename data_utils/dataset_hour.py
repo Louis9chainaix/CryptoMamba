@@ -38,13 +38,11 @@ class DataConverter:
     def __init__(self, config) -> None:
         self.config = config
         self.root = config.get('root')
-        self.jumps = config.get('jumps')
-        self.date_format = config.get('date_format', "%Y-%m-%d")
-        self.additional_features = config.get('additional_features', [])
+        self.jumps = config.get('jumps') * 60
         self.end_date = config.get('end_date')
         self.data_path = config.get('data_path')
         self.start_date = config.get('start_date')
-        self.folder_name = f'{self.start_date}_{self.end_date}_{self.jumps}'
+        self.folder_name = f'{self.start_date}_{self.end_date}_{self.jumps // 60}'
         self.file_path = f'{self.root}/{self.folder_name}'
 
     
@@ -53,11 +51,8 @@ class DataConverter:
         new_df = {}
         for key in ['Timestamp', 'High', 'Low', 'Open', 'Close', 'Volume']:
             new_df[key] = []
-        for key in self.additional_features:
-            new_df[key] = []
-        for i in tqdm(range(start, stop - self.jumps // 60 + 1, self.jumps)):
+        for i in tqdm(range(start, stop - 3600, self.jumps)):
             high, low, open, close, vol = self.merge_data(data, i, self.jumps)
-            additional_features = self.merge_additional(data, i, self.jumps)
             if high is None:
                 continue
             new_df.get('Timestamp').append(i)
@@ -66,8 +61,6 @@ class DataConverter:
             new_df.get('Open').append(open)
             new_df.get('Close').append(close)
             new_df.get('Volume').append(vol)
-            for key in additional_features.keys():
-                new_df.get(key).append(additional_features.get(key))
 
         df = pd.DataFrame(new_df)
 
@@ -77,6 +70,7 @@ class DataConverter:
         tmp = '----'
         data_path = f'{self.file_path}/{tmp}.csv'
         yaml_path = f'{self.file_path}/config.pkl'
+        
         if os.path.isfile(data_path.replace(tmp, 'train')):
             train = pd.read_csv(data_path.replace(tmp, 'train'), index_col=0)
             val = pd.read_csv(data_path.replace(tmp, 'val'), index_col=0)
@@ -115,8 +109,8 @@ class DataConverter:
             tmp_dict = {}
             for key in ['train', 'val', 'test']:
                 start, stop = self.config.get(f'{key}_interval')
-                start = self.generate_timestamp(start)
-                stop = self.generate_timestamp(stop)
+                start = self.generate_timestamp(f'{start}: 00-00')
+                stop = self.generate_timestamp(f'{stop}: 00-00')
                 tmp = data[data['Timestamp'] >= start].reset_index(drop=True)
                 tmp = tmp[tmp['Timestamp'] < stop].reset_index(drop=True)
                 tmp_dict[key] = tmp
@@ -130,32 +124,18 @@ class DataConverter:
         df = pd.read_csv(self.data_path)
         if 'Timestamp' not in df.keys():
             dates = df.get('Date').to_list()
-            df['Timestamp'] = [self.generate_timestamp(x) for x in dates]
+            df['Timestamp'] = [self.generate_timestamp(x, d_format="%Y-%m-%d") for x in dates]
         if self.start_date is None:
-            self.start_date = self.convert_timestamp(min(list(df.get('Timestamp')))).strftime(self.date_format)
+            self.start_date = self.convert_timestamp(min(list(df.get('Timestamp')))).strftime('%Y-%d-%m')
             # raise ValueError(self.start_date)
         if self.end_date is None:
-            self.end_date = self.convert_timestamp(max(list(df.get('Timestamp'))) + self.jumps).strftime(self.date_format)
-        start = self.generate_timestamp(self.start_date)
-        stop = self.generate_timestamp(self.end_date)
+            self.end_date = self.convert_timestamp(max(list(df.get('Timestamp'))) + 24 * 60 * 60).strftime('%Y-%d-%m')
+        start = self.generate_timestamp(f'{self.start_date}: 00-00')
+        stop = self.generate_timestamp(f'{self.end_date}: 00-00')
         df = df[df['Timestamp'] >= start].reset_index(drop=True)
         df = df[df['Timestamp'] < stop].reset_index(drop=True)
-        final_day = self.generate_timestamp(self.end_date)
+        final_day = self.generate_timestamp(f'{self.end_date}: 00-00')
         return df, start, final_day
-    
-    def merge_additional(self, data, start, jump):
-        tmp = data[data['Timestamp'] >= start].reset_index(drop=True)
-        tmp = tmp[tmp['Timestamp'] < start + jump].reset_index(drop=True)
-        if len(tmp) == 0:
-            return None, None, None, None, None
-        row = tmp.iloc[-1]
-        results = {}
-        for key in self.additional_features:
-            results[key] = float(row.get(key))
-        return results
-    
-    def generate_timestamp(self, date):
-        return int(time.mktime(datetime.strptime(date, self.date_format).timetuple()))
     
     @staticmethod
     def merge_data(data, start, jump):
@@ -164,12 +144,14 @@ class DataConverter:
         if len(tmp) == 0:
             return None, None, None, None, None
         _, high, low, open, close, _ = DataConverter.get_row_values(tmp.iloc[0])
+        count = 1
         vol = 0
         for row in tmp.iterrows():
             _, h, l, _, close, v = DataConverter.get_row_values(row[1])
             high = max(high, h)
             low = min(low, l)
             vol += v
+            count += 1
         return high, low, open, close, vol
     
     @staticmethod
@@ -181,6 +163,13 @@ class DataConverter:
         close = float(row.get('Close'))
         vol = float(row.get('Volume'))
         return ts, high, low, open, close, vol
+
+    @staticmethod
+    def generate_timestamp(date, d_format="%Y-%d-%m: %H-%M"):
+        """
+            Year-day-month: hour-minute (all zero padded)
+        """
+        return int(time.mktime(datetime.strptime(date, d_format).timetuple()))
 
     @staticmethod
     def convert_timestamp(timestamp):
